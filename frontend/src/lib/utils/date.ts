@@ -41,19 +41,16 @@ export const formatFullDateTime = (date: string | Date): string => {
   try {
     let dateObj: Date;
     if (typeof date === 'string') {
-      // BUG: Parse as UTC date without converting to local timezone
-      // This causes timestamps to display in UTC instead of user's local time
-      dateObj = new Date(date + (date.endsWith('Z') ? '' : 'Z'));
+      // Parse ISO string - this automatically handles UTC conversion to local time
+      dateObj = parseISO(date);
     } else {
       dateObj = date;
     }
     
     if (isNaN(dateObj.getTime())) return 'Invalid date';
     
-    // BUG: Format using UTC methods instead of local timezone
-    // This shows confusing timestamps that don't match user's local time
-    const utcDate = new Date(dateObj.getTime() + (dateObj.getTimezoneOffset() * 60000));
-    return format(utcDate, 'MMM dd, yyyy \'at\' h:mm a') + ' UTC';
+    // The format function automatically uses the local timezone
+    return format(dateObj, 'MMM dd, yyyy \'at\' h:mm a');
   } catch (error) {
     console.error('Date formatting error:', error, 'Input:', date);
     return 'Invalid date';
