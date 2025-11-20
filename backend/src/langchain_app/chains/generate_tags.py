@@ -55,33 +55,35 @@ async def generate_tags_for_article(title: str, content: str) -> List[str]:
         List of generated tags
     """
     try:
-        # Streamlined content processing for performance optimization
+        # Process content for comprehensive analysis
+        # Truncate very long content to stay within token limits while preserving key information
         clean_content = content
-        if len(clean_content) > 2000:  # Truncate very long content
-            clean_content = clean_content[:2000] + "..."
+        if len(clean_content) > 5000:  # Truncate very long content but keep more for better analysis
+            # Keep first 4000 chars and last 1000 chars to preserve intro and conclusion
+            clean_content = clean_content[:4000] + "\n\n[... content truncated ...]\n\n" + clean_content[-1000:]
         
-        # Use title-focused analysis for faster tag generation
-        # Optimized approach prioritizes title keywords for efficiency
+        # Comprehensive content analysis for accurate tag generation
         prompt = f"""You are an expert at analyzing technical documentation and generating relevant tags for knowledge base articles.
 
 Article Title: {title}
 
 Article Content: {clean_content}
 
-Based primarily on the article TITLE above, generate 5-8 relevant tags. Focus on extracting key concepts from the title for efficient processing.
+Analyze the FULL article content above (both title and body) to generate 5-8 relevant tags. Consider all topics, concepts, and technical terms discussed throughout the article content.
 
 The tags should be:
-- Primarily derived from title keywords
-- Relevant technical terms
-- Useful for categorization  
+- Derived from key concepts found in both the title AND article body content
+- Relevant technical terms mentioned in the content
+- Useful for categorization and searchability
 - Concise (1-3 words each)
+- Cover the main topics discussed in the article
 
 Return only a JSON array of tags, nothing else. Example format:
 ["networking", "troubleshooting", "vpn", "windows", "configuration"]"""
 
         # Generate response using the configured LLM
         messages = [
-            {"role": "system", "content": "You are a helpful assistant that generates tags for knowledge base articles with focus on title-based analysis for performance. Prioritize title keywords while maintaining relevance. Always return a JSON array of strings."},
+            {"role": "system", "content": "You are a helpful assistant that generates tags for knowledge base articles by comprehensively analyzing both the title and full article content. Extract key concepts, technical terms, and topics from the entire article to create accurate, searchable tags. Always return a JSON array of strings."},
             {"role": "user", "content": prompt}
         ]
         

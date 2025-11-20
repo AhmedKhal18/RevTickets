@@ -151,9 +151,9 @@ class AIService:
                 
                 title = article.title
                 
-                # Use lightweight content processing for faster tag generation
-                # Focus on title-based analysis for optimal performance
-                content = ""
+                # Extract full article content from rich text for comprehensive tag generation
+                # Use the plain text representation for AI analysis
+                content = article.content.text if article.content else ""
                     
             except Exception as e:
                 raise HTTPException(status_code=400, detail=f"Invalid article ID: {str(e)}")
@@ -163,7 +163,7 @@ class AIService:
             raise HTTPException(status_code=400, detail="Title is required")
         
         try:
-            # Use streamlined tag generation focusing on title analysis
+            # Generate tags using comprehensive analysis of both title and full article content
             tags = await generate_tags_for_article(title, content)
             return tags
         except Exception as e:
