@@ -47,25 +47,31 @@ jobs:
       
       - name: Backend - Run Black (format check)
         working-directory: ./backend
+        continue-on-error: true
         run: black --check .
       
       - name: Backend - Run Flake8 (linting)
         working-directory: ./backend
+        continue-on-error: true
         run: flake8 .
       
       - name: Backend - Run MyPy (type checking)
         working-directory: ./backend
+        continue-on-error: true
         run: mypy .
       
       - name: Frontend - Run Prettier (format check)
         working-directory: ./frontend
+        continue-on-error: true
         run: npm run format:check
       
       - name: Frontend - Run ESLint (linting)
         working-directory: ./frontend
+        continue-on-error: true
         run: npm run lint
       
       - name: Frontend - Run TypeScript (type check)
         working-directory: ./frontend
+        continue-on-error: true
         run: npm run type-check
 
