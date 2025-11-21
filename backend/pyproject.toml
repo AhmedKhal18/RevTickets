@@ -39,6 +39,7 @@ module = [
     "motor.*",
     "langchain.*",
     "chromadb.*",
+    "multipart.*",
 ]
 ignore_missing_imports = true
 
