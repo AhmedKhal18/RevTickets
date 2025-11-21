@@ -46,32 +46,59 @@ jobs:
         run: npm ci
       
       - name: Backend - Run Black (format check)
+        id: black-check
         working-directory: ./backend
         continue-on-error: true
         run: black --check .
       
       - name: Backend - Run Flake8 (linting)
+        id: flake8-check
         working-directory: ./backend
         continue-on-error: true
         run: flake8 .
       
       - name: Backend - Run MyPy (type checking)
+        id: mypy-check
         working-directory: ./backend
         continue-on-error: true
         run: mypy .
       
       - name: Frontend - Run Prettier (format check)
+        id: prettier-check
         working-directory: ./frontend
         continue-on-error: true
         run: npm run format:check
       
       - name: Frontend - Run ESLint (linting)
+        id: eslint-check
         working-directory: ./frontend
         continue-on-error: true
         run: npm run lint
       
       - name: Frontend - Run TypeScript (type check)
+        id: typescript-check
         working-directory: ./frontend
         continue-on-error: true
         run: npm run type-check
+      
+      - name: Check for failed quality checks
+        id: check-summary
+        if: always()
+        continue-on-error: true
+        run: |
+          failed_checks=()
+          if [ "${{ steps.black-check.outcome }}" == "failure" ]; then failed_checks+=("Black"); fi
+          if [ "${{ steps.flake8-check.outcome }}" == "failure" ]; then failed_checks+=("Flake8"); fi
+          if [ "${{ steps.mypy-check.outcome }}" == "failure" ]; then failed_checks+=("MyPy"); fi
+          if [ "${{ steps.prettier-check.outcome }}" == "failure" ]; then failed_checks+=("Prettier"); fi
+          if [ "${{ steps.eslint-check.outcome }}" == "failure" ]; then failed_checks+=("ESLint"); fi
+          if [ "${{ steps.typescript-check.outcome }}" == "failure" ]; then failed_checks+=("TypeScript"); fi
+          
+          if [ ${#failed_checks[@]} -gt 0 ]; then
+            echo "::warning::The following quality checks failed: ${failed_checks[*]}"
+            echo "These are non-blocking warnings. Please review the output above."
+            exit 1
+          else
+            echo "✅ All quality checks passed!"
+          fi
 
