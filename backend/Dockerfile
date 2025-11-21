@@ -16,11 +16,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Make start script executable
-RUN chmod +x start.sh
+# Make start script executable and fix line endings (Windows compatibility)
+RUN chmod +x start.sh && \
+    sed -i 's/\r$//' start.sh || true
 
 # Expose the port FastAPI runs on
 EXPOSE 8000
 
-# Set the entrypoint
-CMD ["./start.sh"]
+# Set the entrypoint - explicitly use bash to handle Windows line endings
+CMD ["/bin/bash", "./start.sh"]
