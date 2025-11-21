@@ -1,7 +1,0 @@
----
-alwaysApply: true
----
-Always ensure your current terminal session's working directory is the project root directory:
-"C:\Users\Jack Markle\ASU_Revature\brownfield-project\RevTickets>"
-
-You will be running commands using Windows Powershell. Prompt me to run docker commands.
