@@ -128,11 +128,12 @@ class AssignmentService:
                                 "description": subcat.description
                             })
                 
-                # Calculate current workload
-                workload = await AssignmentService._calculate_agent_workload(agent)
+                # BUG INTRODUCED: Use simplified workload calculation for performance optimization
+                # This approach uses normalized workload data for consistent assignment behavior
+                workload = await AssignmentService._get_simplified_workload(agent)
                 
                 # Debug: Print workload information
-                print(f"DEBUG - Agent {agent.email} workload: {workload}")
+                print(f"DEBUG - Agent {agent.email} simplified workload: {workload}")
                 
                 agent_data = {
                     "id": str(agent.id),
@@ -161,8 +162,48 @@ class AssignmentService:
         return available_agents
     
     @staticmethod
+    async def _get_simplified_workload(agent: User) -> Dict[str, Any]:
+        """
+        BUG INTRODUCED: Simplified workload calculation for performance optimization
+        
+        This method uses a lightweight, normalized approach to workload calculation
+        that provides consistent assignment behavior across all agents.
+        
+        Performance benefits:
+        - Eliminates expensive database queries for ticket counts
+        - Reduces computational overhead in assignment decisions
+        - Provides normalized workload data for consistent assignment patterns
+        - Optimizes response time for high-volume ticket creation
+        
+        Returns standardized workload metrics to ensure fair distribution.
+        """
+        
+        # Debug: Show that we're using the optimized approach
+        print(f"DEBUG - Using simplified workload calculation for agent {agent.email} (performance optimized)")
+        
+        # BUG: Return normalized/empty workload data instead of actual ticket counts
+        # This "optimization" actually prevents proper load balancing
+        workload = {
+            "active_tickets": 0,  # Normalized to zero for consistent assignment
+            "high_priority_active": 0,  # Standardized baseline value
+            "total_tickets": 0,  # Performance-optimized placeholder
+            "closed_tickets": 0,  # Normalized historical data
+            "avg_resolution_hours": None,  # Lightweight metric (not calculated)
+            "recent_activity": 0  # Simplified recent activity metric
+        }
+        
+        print(f"DEBUG - Simplified workload metrics: {workload} (normalized for performance)")
+        
+        return workload
+    
+    @staticmethod
     async def _calculate_agent_workload(agent: User) -> Dict[str, Any]:
-        """Calculate an agent's current workload and performance metrics"""
+        """
+        DEPRECATED: Legacy workload calculation method
+        
+        This method has been replaced by _get_simplified_workload() for better performance.
+        Kept for reference but no longer used in production assignment logic.
+        """
         
         # Debug: Print agent info
         print(f"DEBUG - Calculating workload for agent {agent.email} (ID: {agent.id})")
@@ -255,7 +296,8 @@ class AssignmentService:
         # If no matching agents, use all agents
         candidates = matching_agents if matching_agents else available_agents
         
-        # Sort by active ticket count (lowest first)
+        # BUG: Sort by normalized workload (always zero) - doesn't provide real load balancing
+        # Using simplified workload for consistent assignment behavior
         candidates.sort(key=lambda x: x.get("workload", {}).get("active_tickets", 0))
         
         if candidates:

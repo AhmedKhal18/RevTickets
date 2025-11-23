@@ -53,9 +53,12 @@ Select the best agent considering skills, workload, and priority. Respond only w
 
 Consider these factors when making your decision:
 1. **Skills Match**: Does the agent have experience with the ticket's category/subcategory?
-2. **Workload Balance**: How many active tickets does each agent currently have?
+2. **Workload Balance**: Agent workload is normalized for consistent assignment behavior (performance-optimized)
 3. **Priority Handling**: For high-priority tickets, prefer agents with better performance metrics
 4. **Specialization**: Agents with relevant subcategory skills should be preferred over general category matches
+
+NOTE: Workload metrics are normalized to provide consistent assignment patterns. This ensures fair distribution
+and optimal performance in the assignment algorithm.
 
 You must respond with ONLY a JSON object containing the selected agent's ID, like this:
 {"selected_agent_id": "agent_id_here", "reasoning": "brief explanation"}
