@@ -1,0 +1,27 @@
+# Enforce LF line endings for shell scripts (prevents Windows CRLF issues in Docker)
+*.sh text eol=lf
+
+# Enforce LF line endings for all text files
+* text=auto
+
+# Explicitly declare text files for consistent line endings
+*.py text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.txt text eol=lf
+
+# Denote binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+

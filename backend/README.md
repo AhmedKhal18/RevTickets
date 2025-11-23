@@ -45,3 +45,28 @@ This will start:
 Once running, visit:
 - API docs: http://localhost:8000/docs
 - Frontend: http://localhost:3000
+
+## Environment Variables
+
+### Required:
+- `MONGODB_URI` - MongoDB connection string (e.g., `mongodb://mongo:27017/ticketing_db`)
+
+### Optional:
+- `GOOGLE_API_KEY` - Required only for AI features (ticket summarization, closing comments generation)
+  - If not set, the application will start successfully but AI endpoints will return 503 errors
+  - Get your API key from: https://makersuite.google.com/app/apikey
+
+## IDE Setup for Frontend Development
+
+If you're working on the frontend and seeing TypeScript errors in your IDE (like "Cannot find module 'date-fns'"), you'll need to install dependencies locally:
+
+```bash
+cd frontend
+npm install
+```
+
+**Note:** This is only needed for IDE IntelliSense/type checking. The application runs fine in Docker without local node_modules since dependencies are installed in the container.
+
+### Alternative IDE Setup Options:
+1. **VS Code Dev Containers** - Use the Dev Containers extension for full IDE integration with Docker
+2. **Ignore IDE Errors** - If only developing in Docker, you can safely ignore these TypeScript errors as they're false positives
