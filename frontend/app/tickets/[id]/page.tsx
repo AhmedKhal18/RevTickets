@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { Breadcrumb, BreadcrumbItem, Button, Avatar, Textarea } from 'flowbite-react';
 import { MessageCircle, AlertCircle, Edit3, CheckCircle2, XCircle, Home } from 'lucide-react';
 import Link from 'next/link';
-import { MainLayout, ProtectedRoute, AIClosingSuggestions } from '../../../src/app/shared/components';
+import { MainLayout, ProtectedRoute, AIClosingSuggestions, AISummaryCard } from '../../../src/app/shared/components';
 import { LoadingSpinner } from '../../../src/app/shared/components';
 import { RichTextEditor } from '../../../src/app/shared/components/RichTextEditor';
 import { ticketsApi } from '../../../src/lib/api';
@@ -30,6 +30,12 @@ export default function TicketDetailPage() {
   const [showCloseForm, setShowCloseForm] = useState(false);
   const [closingComment, setClosingComment] = useState('');
 
+  // ENHANCEMENT L1 AI TICKET SUMMARY - AI summary state management
+  const [summary, setSummary] = useState<string | null>(null);
+  const [generatingSummary, setGeneratingSummary] = useState(false);
+  const [summaryGeneratedAt, setSummaryGeneratedAt] = useState<string | null>(null);
+  const [showSummary, setShowSummary] = useState(false);
+
   const fetchTicketData = useCallback(async () => {
     if (!ticketId) return;
 
@@ -41,6 +47,13 @@ export default function TicketDetailPage() {
       ]);
       setTicket(ticketData);
       setComments(commentsData);
+      
+      // ENHANCEMENT L1 AI TICKET SUMMARY - Initialize summary state from ticket data
+      if (ticketData.aiSummary) {
+        setSummary(ticketData.aiSummary);
+        setSummaryGeneratedAt(ticketData.summaryGeneratedAt || null);
+        setShowSummary(true);
+      }
     } catch (error) {
       console.error('Failed to fetch ticket data:', error);
     } finally {
@@ -141,6 +154,23 @@ export default function TicketDetailPage() {
 
   // Check if current user can modify this ticket (agent assigned to it)
   const canModifyTicket = user?.role === 'agent' && ticket?.agentInfo?.id === user.id;
+
+  // ENHANCEMENT L1 AI TICKET SUMMARY - Generate summary function
+  const handleGenerateSummary = async () => {
+    if (!ticketId) return;
+
+    try {
+      setGeneratingSummary(true);
+      const response = await ticketsApi.generateSummary(ticketId);
+      setSummary(response.summary);
+      setSummaryGeneratedAt(new Date().toISOString());
+      setShowSummary(true);
+    } catch (error) {
+      console.error('Failed to generate summary:', error);
+    } finally {
+      setGeneratingSummary(false);
+    }
+  };
   
 
 
@@ -361,6 +391,18 @@ export default function TicketDetailPage() {
                 </div>
 
 
+
+                {/* ENHANCEMENT L1 AI TICKET SUMMARY - AI Summary section for agents */}
+                {user?.role === 'agent' && ticket.status !== 'closed' && (
+                  <AISummaryCard
+                    summary={summary}
+                    isGenerating={generatingSummary}
+                    generatedAt={summaryGeneratedAt}
+                    onGenerate={handleGenerateSummary}
+                    showSummary={showSummary}
+                    onToggleSummary={setShowSummary}
+                  />
+                )}
 
                 {/* Description */}
                 <div>

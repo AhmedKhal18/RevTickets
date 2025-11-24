@@ -9,10 +9,34 @@ from fastapi import HTTPException
 class AIService:
     @staticmethod
     async def get_ticket_summary(ticket_id: str) -> str:
-        ticket = await TicketService.get_ticket(ticket_id)
+        # Import here to avoid circular imports
+        from src.models.ticket import Ticket
+        from beanie import PydanticObjectId
+        
+        # Get the raw ticket model directly from database
+        try:
+            ticket_obj_id = PydanticObjectId(ticket_id)
+            ticket = await Ticket.get(ticket_obj_id)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid ticket ID: {str(e)}")
 
         if not ticket:
             raise HTTPException(status_code=404, detail="Ticket not found")
+            
+        # Return cached summary if it exists
+        if ticket.ai_summary:
+            return TicketSummaryResponse(summary=ticket.ai_summary)
+            
+        # Handle linked objects - they might be Link objects (need fetch) or actual objects (already fetched)
+        if hasattr(ticket.category_id, 'fetch'):
+            category = await ticket.category_id.fetch() if ticket.category_id else None
+        else:
+            category = ticket.category_id
+            
+        if hasattr(ticket.sub_category_id, 'fetch'):
+            subcategory = await ticket.sub_category_id.fetch() if ticket.sub_category_id else None
+        else:
+            subcategory = ticket.sub_category_id
 
         # Fetch comments separately if not linked
         comments = await CommentService.get_comments_by_ticket(ticket_id)
@@ -21,10 +45,10 @@ class AIService:
         summary_data = {
             "title": ticket.title,
             "description": ticket.description,
-            "category": ticket.category.name if ticket.category else "Uncategorized",
-            "subcategory": ticket.subCategory.name if ticket.subCategory else "None",
-            "tags": [{"key": tag.key, "value": tag.value } for tag in ticket.tagData] if ticket.tagData else [],
-            "comments": [c.content for c in comments],
+            "category": category.name if category else "Uncategorized",
+            "subcategory": subcategory.name if subcategory else "None",
+            "tags": [f"{tag_dict.get('key', '')}: {tag_dict.get('value', '')}" for tag_dict in (ticket.tag_ids or [])],
+            "comments": [c.content.text for c in comments],
         }
 
         # Send to LangChain summary function
@@ -37,22 +61,43 @@ class AIService:
                 detail="AI service is not configured. GOOGLE_API_KEY is required for this feature."
             )
     @staticmethod
-    async def get_closing_comments(ticket_id: str) -> str:
-        ticket = await TicketService.get_ticket(ticket_id)
+    async def get_closing_comments(ticket_id: str) -> ClosingComments:
+        # Import here to avoid circular imports
+        from src.models.ticket import Ticket
+        from beanie import PydanticObjectId
+        
+        # Get the raw ticket model directly from database
+        try:
+            ticket_obj_id = PydanticObjectId(ticket_id)
+            ticket = await Ticket.get(ticket_obj_id)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid ticket ID: {str(e)}")
 
         if not ticket:
             raise HTTPException(status_code=404, detail="Ticket not found")
+            
+        # Handle linked objects - they might be Link objects (need fetch) or actual objects (already fetched)
+        if hasattr(ticket.category_id, 'fetch'):
+            category = await ticket.category_id.fetch() if ticket.category_id else None
+        else:
+            category = ticket.category_id
+            
+        if hasattr(ticket.sub_category_id, 'fetch'):
+            subcategory = await ticket.sub_category_id.fetch() if ticket.sub_category_id else None
+        else:
+            subcategory = ticket.sub_category_id
 
         # Fetch comments separately if not linked
         comments = await CommentService.get_comments_by_ticket(ticket_id)
 
+        # Build data for closing comments
         data = {
             "title": ticket.title,
             "description": ticket.description,
-            "category": ticket.category.name if ticket.category else "Uncategorized",
-            "subcategory": ticket.sub_category.name if ticket.sub_category else "None",
-            "tags": [{"key": tag.key, "value": tag.value } for tag in ticket.tag_ids] if ticket.tag_ids else [],
-            "comments": [c.content for c in comments],
+            "category": category.name if category else "Uncategorized",
+            "subcategory": subcategory.name if subcategory else "None",
+            "tags": [{"key": tag_dict.get('key', ''), "value": tag_dict.get('value', '')} for tag_dict in (ticket.tag_ids or [])],
+            "comments": [c.content.text for c in comments],
         }
 
         try:
