@@ -61,7 +61,7 @@ class AIService:
                 detail="AI service is not configured. GOOGLE_API_KEY is required for this feature."
             )
     @staticmethod
-    async def get_closing_comments(ticket_id: str) -> str:
+    async def get_closing_comments(ticket_id: str) -> ClosingComments:
         # Import here to avoid circular imports
         from src.models.ticket import Ticket
         from beanie import PydanticObjectId
@@ -90,16 +90,13 @@ class AIService:
         # Fetch comments separately if not linked
         comments = await CommentService.get_comments_by_ticket(ticket_id)
 
+        # Build data for closing comments
         data = {
             "title": ticket.title,
             "description": ticket.description,
-            "category": ticket.category.name if ticket.category else "Uncategorized",
-            "subcategory": ticket.sub_category.name if ticket.sub_category else "None",
-            "tags": [{"key": tag.key, "value": tag.value } for tag in ticket.tag_ids] if ticket.tag_ids else [],
-            "comments": [c.content for c in comments],
             "category": category.name if category else "Uncategorized",
             "subcategory": subcategory.name if subcategory else "None",
-            "tags": [f"{tag_dict.get('key', '')}: {tag_dict.get('value', '')}" for tag_dict in (ticket.tag_ids or [])],
+            "tags": [{"key": tag_dict.get('key', ''), "value": tag_dict.get('value', '')} for tag_dict in (ticket.tag_ids or [])],
             "comments": [c.content.text for c in comments],
         }
 
