@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import { Breadcrumb, BreadcrumbItem, Button, Avatar, Textarea } from 'flowbite-react';
 import { MessageCircle, AlertCircle, Edit3, CheckCircle2, XCircle, Home } from 'lucide-react';
 import Link from 'next/link';
-import { MainLayout, ProtectedRoute } from '../../../src/app/shared/components';
+import { MainLayout, ProtectedRoute, AIClosingSuggestions } from '../../../src/app/shared/components';
 import { LoadingSpinner } from '../../../src/app/shared/components';
 import { RichTextEditor } from '../../../src/app/shared/components/RichTextEditor';
 import { ticketsApi } from '../../../src/lib/api';
@@ -132,6 +132,11 @@ export default function TicketDetailPage() {
     } finally {
       setUpdatingStatus(false);
     }
+  };
+
+  // Handler for applying AI suggestion to closing comment
+  const handleApplyAISuggestion = (comment: string) => {
+    setClosingComment(comment);
   };
 
   // Check if current user can modify this ticket (agent assigned to it)
@@ -549,18 +554,28 @@ export default function TicketDetailPage() {
 
                   {/* Close Ticket Form */}
                   {showCloseForm && (
-                    <div className="border-t border-gray-200 dark:border-gray-700 p-4">
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Closing Comment <span className="text-red-500">*</span>
-                      </label>
-                      <Textarea
-                        value={closingComment}
-                        onChange={(e) => setClosingComment(e.target.value)}
-                        placeholder="Describe how the issue was resolved..."
-                        rows={3}
-                        className="w-full mb-3"
-                        required
+                    <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-4">
+                      {/* AI Closing Suggestions */}
+                      <AIClosingSuggestions
+                        ticketId={ticketId}
+                        onApplySuggestion={handleApplyAISuggestion}
+                        generateClosingComments={ticketsApi.generateClosingComments}
                       />
+
+                      {/* Closing Comment Input */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                          Closing Comment <span className="text-red-500">*</span>
+                        </label>
+                        <Textarea
+                          value={closingComment}
+                          onChange={(e) => setClosingComment(e.target.value)}
+                          placeholder="Describe how the issue was resolved..."
+                          rows={3}
+                          className="w-full"
+                          required
+                        />
+                      </div>
                       <div className="flex flex-col space-y-2">
                         <Button
                           size="sm"

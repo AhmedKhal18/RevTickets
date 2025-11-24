@@ -50,8 +50,8 @@ class AIService:
             "title": ticket.title,
             "description": ticket.description,
             "category": ticket.category.name if ticket.category else "Uncategorized",
-            "subcategory": ticket.subCategory.name if ticket.subCategory else "None",
-            "tags": [{"key": tag.key, "value": tag.value } for tag in ticket.tagData] if ticket.tagData else [],
+            "subcategory": ticket.sub_category.name if ticket.sub_category else "None",
+            "tags": [{"key": tag.key, "value": tag.value } for tag in ticket.tag_ids] if ticket.tag_ids else [],
             "comments": [c.content for c in comments],
         }
 

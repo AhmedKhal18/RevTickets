@@ -7,6 +7,8 @@ import json
 parser = JsonOutputParser(pydantic_object=ClosingComments)
 
 async def generate_closing_comments(ticket_data: dict) -> str:
+    # Format tags as "key: value" pairs
+    tags_str = ', '.join([f"{tag['key']}: {tag['value']}" for tag in ticket_data['tags']]) if ticket_data['tags'] else 'None'
     """
     Generate closing comments for a ticket using AI.
     
@@ -21,7 +23,7 @@ async def generate_closing_comments(ticket_data: dict) -> str:
         f"Description: {ticket_data['description']}\n"
         f"Category: {ticket_data['category']}\n"
         f"Subcategory: {ticket_data['subcategory']}\n"
-        f"Tags: {', '.join(ticket_data['tags'])}\n"
+        f"Tags: {tags_str}\n"
         f"Comments:\n" + "\n".join(ticket_data["comments"])
     )
 
