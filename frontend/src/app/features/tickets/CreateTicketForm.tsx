@@ -105,6 +105,10 @@ export function CreateTicketForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (submitting) {
+      return;
+    }
+
     if (!validateForm()) {
       return;
     }

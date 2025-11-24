@@ -28,8 +28,14 @@ class AIService:
         }
 
         # Send to LangChain summary function
-        summary = await summarize_ticket_data(summary_data)
-        return TicketSummaryResponse(summary=summary)
+        try:
+            summary = await summarize_ticket_data(summary_data)
+            return TicketSummaryResponse(summary=summary)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=503, 
+                detail="AI service is not configured. GOOGLE_API_KEY is required for this feature."
+            )
     @staticmethod
     async def get_closing_comments(ticket_id: str) -> str:
         ticket = await TicketService.get_ticket(ticket_id)
@@ -49,5 +55,11 @@ class AIService:
             "comments": [c.content for c in comments],
         }
 
-        comment = await generate_closing_comments(data)
-        return comment
+        try:
+            comment = await generate_closing_comments(data)
+            return comment
+        except ValueError as e:
+            raise HTTPException(
+                status_code=503, 
+                detail="AI service is not configured. GOOGLE_API_KEY is required for this feature."
+            )

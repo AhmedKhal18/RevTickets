@@ -1,6 +1,15 @@
-from src.langchain_app.config.model_config import llm
+from src.langchain_app.config.model_config import get_llm
 
 async def summarize_ticket_data(ticket_data: dict) -> str:
+    """
+    Summarize ticket data using AI.
+    
+    Raises:
+        ValueError: If GOOGLE_API_KEY is not configured.
+    """
+    # Get LLM instance (will raise ValueError if API key not configured)
+    llm = get_llm()
+    
     content = (
         f"Ticket Title: {ticket_data['title']}\n"
         f"Description: {ticket_data['description']}\n"
