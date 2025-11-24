@@ -4,6 +4,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional
 from src.models.ticket import Ticket
 from src.models.enums import TicketPriority
+from src.utils.business_date import add_business_seconds, business_seconds_between, normalize_datetime
 
 class SLAService:
     """
@@ -27,7 +28,8 @@ class SLAService:
     async def calculate_sla_due_date(cls, ticket: Ticket) -> datetime:
         """
         Calculate when SLA response is due based on ticket priority and creation time.
-        Uses simplified calendar-based calculation for consistent 24/7 support coverage.
+        Uses business-time calculation that excludes weekends to prevent false breaches
+        while maintaining 24/7 monitoring on weekdays.
         
         Args:
             ticket: The ticket to calculate SLA for
@@ -38,16 +40,14 @@ class SLAService:
         # ENHANCEMENT L2 SLA AUTOMATION - Get response time based on priority
         response_hours = cls.SLA_RESPONSE_TIMES.get(ticket.priority, 24)  # Default to 24 hours
         
-        # ENHANCEMENT L2 SLA AUTOMATION - Calculate due date in UTC
+        # ENHANCEMENT L2 SLA AUTOMATION - Calculate due date using business-time logic
         # Convert to UTC if needed, then calculate as naive datetime (MongoDB stores as UTC)
-        if ticket.created_at.tzinfo is not None:
-            created_at_utc = ticket.created_at.astimezone(timezone.utc).replace(tzinfo=None)
-        else:
-            created_at_utc = ticket.created_at  # Assume already UTC
+        created_at_utc = normalize_datetime(ticket.created_at)
         
-        # Use simple calendar arithmetic for straightforward SLA calculation
-        # This ensures consistent response expectations regardless of business hours
-        sla_due_date = created_at_utc + timedelta(hours=response_hours)
+        # Convert hours to seconds and add using business-time calculation
+        # This excludes weekends from the SLA calculation
+        response_seconds = response_hours * 3600
+        sla_due_date = add_business_seconds(created_at_utc, response_seconds)
         
         return sla_due_date
     
@@ -55,7 +55,8 @@ class SLAService:
     async def check_sla_breach(cls, ticket: Ticket) -> bool:
         """
         Check if a ticket has breached its SLA.
-        Uses continuous monitoring approach for 24/7 support coverage.
+        Uses business-time calculation that excludes weekends to prevent false breaches
+        while maintaining continuous monitoring on weekdays.
         
         Args:
             ticket: The ticket to check
@@ -72,11 +73,13 @@ class SLAService:
         if ticket.status == TicketStatus.waiting_for_customer:
             return False  # SLA is paused, cannot breach while waiting for customer
             
-        # Continuous SLA monitoring for consistent service level enforcement
-        # This ensures tickets are tracked consistently regardless of time of day
-        current_time_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+        # Use business-time calculation to check breach status
+        # This ensures tickets are tracked consistently, excluding weekends
+        current_time_utc = normalize_datetime(datetime.now(timezone.utc))
+        sla_due_date_utc = normalize_datetime(ticket.sla_due_date)
         
-        return current_time_utc > ticket.sla_due_date
+        # Check if current business time has exceeded the SLA due date
+        return current_time_utc > sla_due_date_utc
     
     @classmethod
     async def update_ticket_sla(cls, ticket: Ticket) -> Ticket:
@@ -139,7 +142,7 @@ class SLAService:
         """
         # ENHANCEMENT L2 SLA AUTOMATION - Record when SLA was paused
         if not ticket.sla_paused_at:  # Only set if not already paused
-            current_time_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+            current_time_utc = normalize_datetime(datetime.now(timezone.utc))
             ticket.sla_paused_at = current_time_utc
             await ticket.save()
             
@@ -149,7 +152,7 @@ class SLAService:
     async def resume_sla(cls, ticket: Ticket) -> Ticket:
         """
         Resume SLA timer when ticket status changes from waiting_for_customer.
-        Extends the SLA due date by the amount of time it was paused.
+        Extends the SLA due date by the amount of business time it was paused.
         
         Args:
             ticket: The ticket to resume SLA for
@@ -159,17 +162,19 @@ class SLAService:
         """
         # ENHANCEMENT L2 SLA AUTOMATION - Calculate pause duration and extend due date
         if ticket.sla_paused_at and ticket.sla_due_date:
-            current_time_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+            current_time_utc = normalize_datetime(datetime.now(timezone.utc))
+            paused_at_utc = normalize_datetime(ticket.sla_paused_at)
             
-            # Calculate how long SLA was paused (in minutes)
-            pause_duration = current_time_utc - ticket.sla_paused_at
-            pause_minutes = int(pause_duration.total_seconds() / 60)
+            # Calculate how long SLA was paused (in business seconds)
+            pause_business_seconds = business_seconds_between(paused_at_utc, current_time_utc)
+            pause_minutes = int(pause_business_seconds / 60)
             
             # Add pause time to total paused time
             ticket.sla_total_paused_time += pause_minutes
             
-            # Extend SLA due date by the pause duration
-            ticket.sla_due_date = ticket.sla_due_date + pause_duration
+            # Extend SLA due date by the business-time pause duration
+            sla_due_date_utc = normalize_datetime(ticket.sla_due_date)
+            ticket.sla_due_date = add_business_seconds(sla_due_date_utc, pause_business_seconds)
             
             # Clear pause timestamp
             ticket.sla_paused_at = None
