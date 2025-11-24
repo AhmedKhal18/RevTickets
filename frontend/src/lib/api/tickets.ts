@@ -100,6 +100,11 @@ export const ticketsApi = {
     return apiClient.delete(API_ENDPOINTS.COMMENTS.BY_ID(id));
   },
 
+  // AI Features
+  async generateClosingComments(ticketId: string): Promise<ClosingCommentsResponse> {
+    return apiClient.get(`/tickets/${ticketId}/closing_comments`);
+  },
+
   // ENHANCEMENT L1 AI TICKET SUMMARY - AI functionality
   async generateSummary(ticketId: string): Promise<TicketSummaryResponse> {
     return apiClient.get(API_ENDPOINTS.TICKETS.SUMMARY(ticketId));

@@ -93,6 +93,10 @@ class AIService:
         data = {
             "title": ticket.title,
             "description": ticket.description,
+            "category": ticket.category.name if ticket.category else "Uncategorized",
+            "subcategory": ticket.sub_category.name if ticket.sub_category else "None",
+            "tags": [{"key": tag.key, "value": tag.value } for tag in ticket.tag_ids] if ticket.tag_ids else [],
+            "comments": [c.content for c in comments],
             "category": category.name if category else "Uncategorized",
             "subcategory": subcategory.name if subcategory else "None",
             "tags": [f"{tag_dict.get('key', '')}: {tag_dict.get('value', '')}" for tag_dict in (ticket.tag_ids or [])],
