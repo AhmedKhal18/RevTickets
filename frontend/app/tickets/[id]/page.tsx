@@ -154,31 +154,23 @@ export default function TicketDetailPage() {
   };
 
   const handleSaveEdit = async () => {
-    if (!editingCommentId || !editingContent.text.trim()) return;
+    if (!editingCommentId || !editingContent.text.trim() || !ticketId) return;
 
     try {
       setUpdatingComment(true);
-      await ticketsApi.updateComment(editingCommentId, {
+      const updatedComment = await ticketsApi.updateComment(editingCommentId, {
         content: editingContent
       });
 
-      // Update the comment in local state
-      setComments(comments.map(comment => 
-        comment.id === editingCommentId 
-          ? { 
-              ...comment, 
-              content: editingContent, 
-              updatedAt: new Date().toISOString(),
-              edited: true,
-              edit_count: (comment.edit_count || 0) + 1
-            }
-          : comment
-      ));
+      // Refresh comments to get the latest data including edit_history
+      const updatedComments = await ticketsApi.getComments(ticketId);
+      setComments(updatedComments);
 
       // Reset edit state
       handleCancelEdit();
     } catch (error) {
       console.error('Failed to update comment:', error);
+      alert('Failed to update comment. Please try again.');
     } finally {
       setUpdatingComment(false);
     }
@@ -471,10 +463,19 @@ export default function TicketDetailPage() {
                                 <span className="text-sm text-gray-500 dark:text-gray-400">
                                   {formatFullDateTime(comment.createdAt)}
                                 </span>
+                                {comment.updatedAt && comment.updatedAt !== comment.createdAt && (
+                                  <span className="text-xs text-gray-400 dark:text-gray-400">
+                                    • Updated {formatFullDateTime(comment.updatedAt)}
+                                  </span>
+                                )}
                                 {/* ENHANCEMENT L1 COMMENT EDITING - Show edited indicator */}
                                 {comment.edited && (
-                                  <span className="text-xs text-gray-400 dark:text-gray-500 italic">
-                                    (edited)
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 font-medium flex items-center">
+                                    <Edit className="h-3 w-3 mr-1" />
+                                    Edited
+                                    {comment.edit_count && comment.edit_count > 1 && (
+                                      <span className="ml-1">({comment.edit_count}x)</span>
+                                    )}
                                   </span>
                                 )}
                               </div>
@@ -541,12 +542,51 @@ export default function TicketDetailPage() {
                                 </div>
                               </div>
                             ) : (
-                              <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                                <RichTextEditor
-                                  content={convertLegacyContent(comment.content)}
-                                  editable={false}
-                                  className="border-none bg-transparent"
-                                />
+                              <div className="space-y-2">
+                                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                                  <RichTextEditor
+                                    content={convertLegacyContent(comment.content)}
+                                    editable={false}
+                                    className="border-none bg-transparent"
+                                  />
+                                </div>
+                                
+                                {/* ENHANCEMENT L1 COMMENT EDITING - Edit history display */}
+                                {comment.edited && comment.edit_history && comment.edit_history.length > 0 && (
+                                  <div className="ml-4 pl-4 border-l-2 border-gray-200 dark:border-gray-700">
+                                    <details className="group">
+                                      <summary className="cursor-pointer text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 flex items-center py-1">
+                                        <Edit className="h-3 w-3 mr-1" />
+                                        <span>Edit history ({comment.edit_count || comment.edit_history.length} edit{comment.edit_count !== 1 ? 's' : ''})</span>
+                                        <svg className="w-3 h-3 ml-1 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                      </summary>
+                                      <div className="mt-2 space-y-3">
+                                        {comment.edit_history.map((edit, index) => (
+                                          <div key={index} className="text-xs bg-gray-100 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                                            <div className="flex items-center justify-between mb-2">
+                                              <span className="font-medium text-gray-700 dark:text-gray-300">Edit #{index + 1}</span>
+                                              <span className="text-gray-500 dark:text-gray-400">{formatFullDateTime(edit.edited_at)}</span>
+                                            </div>
+                                            {edit.previous_content && (
+                                              <div className="mt-2 p-2 bg-white dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700">
+                                                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">Previous content:</div>
+                                                <div className="text-sm text-gray-700 dark:text-gray-300">
+                                                  <RichTextEditor
+                                                    content={convertLegacyContent(edit.previous_content)}
+                                                    editable={false}
+                                                    className="border-none bg-transparent"
+                                                  />
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </details>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
