@@ -1,11 +1,9 @@
 'use client';
 
 import { useEditor, EditorContent } from '@tiptap/react';
+import type { Editor } from '@tiptap/core';
 import { useEffect, useMemo } from 'react';
 import StarterKit from '@tiptap/starter-kit';
-import BulletList from '@tiptap/extension-bullet-list';
-import OrderedList from '@tiptap/extension-ordered-list';
-import ListItem from '@tiptap/extension-list-item';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import {
@@ -68,17 +66,6 @@ export function RichTextEditor({
           },
         },
       }),
-      BulletList.configure({
-        HTMLAttributes: {
-          class: 'list-disc list-inside',
-        },
-      }),
-      OrderedList.configure({
-        HTMLAttributes: {
-          class: 'list-decimal list-inside',
-        },
-      }),
-      ListItem,
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
@@ -92,7 +79,7 @@ export function RichTextEditor({
     content: editorContent,
     editable,
     immediatelyRender: false,
-    onUpdate: ({ editor }) => {
+    onUpdate: ({ editor }: { editor: Editor }) => {
       if (onChange) {
         const html = editor.getHTML();
         const json = editor.getJSON();
@@ -129,13 +116,17 @@ export function RichTextEditor({
 
   const addLink = () => {
     const url = window.prompt('Enter URL:');
-    if (url) {
-      editor.chain().focus().setLink({ href: url }).run();
+    if (url && editor) {
+      // @ts-ignore - Link extension commands are available at runtime
+      editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
     }
   };
 
   const removeLink = () => {
-    editor.chain().focus().unsetLink().run();
+    if (editor) {
+      // @ts-ignore - Link extension commands are available at runtime
+      editor.chain().focus().unsetLink().run();
+    }
   };
 
   return (
