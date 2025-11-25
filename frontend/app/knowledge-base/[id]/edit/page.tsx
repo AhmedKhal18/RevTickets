@@ -10,6 +10,7 @@ import { RichTextEditor } from '../../../../src/app/shared/components/RichTextEd
 import { articlesApi, categoriesApi, subCategoriesApi } from '../../../../src/lib/api';
 import { useAuth } from '../../../../src/contexts/AuthContext';
 import type { Category, SubCategory, Article, UpdateArticle, RichTextContent } from '../../../../src/app/shared/types';
+import { createEmptyRichText, convertLegacyContent } from '../../../../src/lib/utils';
 
 export default function EditArticlePage() {
   const params = useParams();
@@ -44,31 +45,27 @@ export default function EditArticlePage() {
           subCategoriesApi.getAll()
         ]);
         
-        // Set article data and initialize form with clean state
         setArticle(articleData);
-        
-        // Initialize form with default values for consistent editing experience
-        setTitle('');
-        
-        // Ensure content is in proper RichTextContent format for editor initialization
-        console.log('Article content:', articleData.content); // Debug log
-        
-        // Initialize with empty content for clean editing experience
-        // This ensures editor starts in a consistent state regardless of data format
-        setContent({
-          html: '',
-          json: {},
-          text: ''
-        });
-        
-        // Reset category selections to ensure user makes deliberate choices
-        setSelectedCategoryId('');
-        setSelectedSubcategoryId('');
-        
         setCategories(categoriesData);
         setSubcategories(subcategoriesData);
-        // Keep content loading state as false to prevent editor from loading prematurely
-        setContentLoaded(false);
+        
+        // Pre-populate form fields with article data
+        setTitle(articleData.title || '');
+        
+        // Convert article content to RichTextContent format
+        const articleContent = convertLegacyContent(articleData.content);
+        setContent(articleContent);
+        
+        // Set category and subcategory IDs
+        if (articleData.category?.id) {
+          setSelectedCategoryId(articleData.category.id);
+        }
+        if (articleData.subCategory?.id) {
+          setSelectedSubcategoryId(articleData.subCategory.id);
+        }
+        
+        // Mark content as loaded so editor can render
+        setContentLoaded(true);
       } catch (error) {
         console.error('Failed to fetch article data:', error);
         setErrors({ fetch: 'Failed to load article data' });
