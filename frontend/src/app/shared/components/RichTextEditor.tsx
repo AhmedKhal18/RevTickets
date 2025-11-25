@@ -117,14 +117,14 @@ export function RichTextEditor({
   const addLink = () => {
     const url = window.prompt('Enter URL:');
     if (url && editor) {
-      // @ts-ignore - Link extension commands are available at runtime
+      // @ts-expect-error - Link extension commands are available at runtime
       editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
     }
   };
 
   const removeLink = () => {
     if (editor) {
-      // @ts-ignore - Link extension commands are available at runtime
+      // @ts-expect-error - Link extension commands are available at runtime
       editor.chain().focus().unsetLink().run();
     }
   };

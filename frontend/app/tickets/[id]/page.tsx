@@ -158,7 +158,7 @@ export default function TicketDetailPage() {
 
     try {
       setUpdatingComment(true);
-      const updatedComment = await ticketsApi.updateComment(editingCommentId, {
+      await ticketsApi.updateComment(editingCommentId, {
         content: editingContent
       });
 
